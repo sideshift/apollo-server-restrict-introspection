@@ -1,0 +1,50 @@
+{
+  "name": "apollo-server-restrict-introspection",
+  "version": "0.0.1",
+  "description": "Restrict types exposed by apollo-server's introspection/playground.",
+  "main": "./dist/index.js",
+  "types": "./dist/index.d.ts",
+  "scripts": {
+    "demo": "ts-node src/demo.ts",
+    "build": "tsc",
+    "test": "jest",
+    "lint": "eslint --ext js,ts src",
+    "prepublishOnly": "npm run lint && npm run build"
+  },
+  "keywords": [
+    "apollo-server-",
+    "graphql",
+    "introspection",
+    "playground",
+    "typescript",
+    "javascript",
+    "security"
+  ],
+  "author": "Andreas Brekken <andreas@brekken.com>",
+  "license": "MIT",
+  "devDependencies": {
+    "@types/express": "4.17.6",
+    "@types/jest": "25.2.1",
+    "@types/lru-cache": "5.1.0",
+    "@types/node": "13.13.4",
+    "@typescript-eslint/eslint-plugin": "2.30.0",
+    "@typescript-eslint/parser": "2.30.0",
+    "body-parser": "1.19.0",
+    "eslint": "6.8.0",
+    "eslint-config-airbnb-typescript": "7.2.1",
+    "eslint-config-airbnb-typescript-prettier": "2.1.1",
+    "eslint-config-prettier": "6.11.0",
+    "express": "4.17.1",
+    "jest": "25.5.3",
+    "nodemon": "2.0.3",
+    "prettier": "^1.18.2",
+    "ts-jest": "25.4.0",
+    "ts-node": "8.9.1",
+    "typescript": "3.8.3",
+    "graphql": "15.0.0"
+  },
+  "dependencies": {
+    "apollo-server-express": ">=2",
+    "lru-cache": ">=5.1"
+  }
+}
