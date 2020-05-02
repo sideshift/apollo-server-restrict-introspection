@@ -122,3 +122,6 @@ tsconfig.json
 jest.config.*
 .prettierrc
 package-lock.json
+.eslintrc.js
+src/*.test.ts
+src/demo*
