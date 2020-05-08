@@ -51,9 +51,6 @@ export type WhitelistEntry =
 export type Whitelist = WhitelistEntry[];
 
 export function withWhitelist(whitelist: Whitelist, response: unknown): IntrospectionResponse {
-  // require('fs').writeFileSync(__dirname + '/../res.json', JSON.stringify(response, null, 2));
-  // return response as IntrospectionResponse;
-
   const responseTyped = response as IntrospectionResponse;
 
   return {
