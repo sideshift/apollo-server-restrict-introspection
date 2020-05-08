@@ -12,9 +12,36 @@ import type { NextFunction, Request, Response } from 'express';
 import LRU from 'lru-cache';
 import { SchemaDirectiveVisitor } from 'apollo-server-express';
 
+enum TypeKind {
+  inputObject = 'INPUT_OBJECT',
+  object = 'OBJECT',
+  scalar = 'SCALAR'
+}
+
+interface Field {
+  name: string;
+}
+
+interface ObjectType {
+  kind: TypeKind.object;
+  fields: Field[];
+}
+
+interface InputObjectType {
+  kind: TypeKind.inputObject;
+  fields: Field[];
+}
+
+interface ScalarType {
+  kind: TypeKind.scalar;
+  fields: null;
+}
+
+type Type = { name: string; } & (ObjectType | InputObjectType | ScalarType);
+
 /* eslint-disable no-underscore-dangle */
 interface IntrospectionResponse {
-  data: {
+  data?: {
     __schema: {
       queryType?: {
         name: string;
@@ -22,20 +49,7 @@ interface IntrospectionResponse {
       mutationType?: {
         name: string;
       };
-      types: {
-        kind: string;
-        name: string;
-        fields:
-          | {
-              name: string;
-            }[]
-          | null;
-        inputFields:
-          | {
-              name: string;
-            }[]
-          | null;
-      }[];
+      types: Type[]
     };
   };
 }
@@ -53,13 +67,19 @@ export type Whitelist = WhitelistEntry[];
 export function withWhitelist(whitelist: Whitelist, response: unknown): IntrospectionResponse {
   const responseTyped = response as IntrospectionResponse;
 
+  const { data } = responseTyped;
+
+  if (data === undefined) {
+    return responseTyped;
+  }
+
   return {
     ...responseTyped,
     data: {
-      ...responseTyped.data,
+      ...data,
       __schema: {
-        ...responseTyped.data.__schema,
-        types: responseTyped.data.__schema.types.reduce((prev, type) => {
+        ...data.__schema,
+        types: data.__schema.types.reduce((prev, type) => {
           const entry = whitelist.find((_) => {
             if (typeof _ === 'string') {
               return _ === type.name;
@@ -78,16 +98,22 @@ export function withWhitelist(whitelist: Whitelist, response: unknown): Introspe
             return [...prev, type];
           }
 
-          const fields = type.fields || type.inputFields;
+          let fields: Field[];
+
+          if (type.kind === TypeKind.object || type.kind === TypeKind.inputObject) {
+            fields = type.fields;
+          } else {
+            throw new Error(`Unexpected kind ${type.kind}`);
+          }
 
           return [
             ...prev,
             {
               ...type,
-              fields: fields!.filter((field) => allowedFields.includes(field.name)),
+              fields: fields.filter((field) => allowedFields.includes(field.name)),
             },
           ];
-        }, [] as IntrospectionResponse['data']['__schema']['types']),
+        }, [] as (typeof data)['__schema']['types']),
       },
     },
   };
@@ -98,7 +124,13 @@ function entryName(entry: WhitelistEntry): string {
 }
 
 function validateWhitelist(whitelist: Whitelist, response: IntrospectionResponse): void {
-  const schema = response.data.__schema;
+  const { data } = response;
+
+  if (data === undefined) {
+    throw new Error('data is undefined');
+  }
+
+  const schema = data.__schema;
 
   if (schema.queryType !== undefined && !whitelist.some((entry) => entryName(entry) === 'Query')) {
     throw new Error(`When schema defines a queryType, whitelist must contain "Query"`);
@@ -171,7 +203,7 @@ export function createDirective() {
 
     private visit(
       object: GraphQLInputObjectType | GraphQLObjectType,
-      kind: 'OBJECT' | 'INPUT_OBJECT'
+      kind: TypeKind.object | TypeKind.inputObject
     ) {
       const fields = object.getFields();
       const allowAllFields = this.args.fields === true;
@@ -195,15 +227,15 @@ export function createDirective() {
     }
 
     visitScalar(scalar: GraphQLScalarType): GraphQLScalarType | void | null {
-      whitelist.push({ kind: 'SCALAR', name: scalar.name });
+      whitelist.push({ kind: TypeKind.scalar, name: scalar.name });
     }
 
     visitInputObject(object: GraphQLInputObjectType): GraphQLInputObjectType | void | null {
-      this.visit(object, 'INPUT_OBJECT');
+      this.visit(object, TypeKind.inputObject);
     }
 
     visitObject(object: GraphQLObjectType): GraphQLObjectType | void | null {
-      this.visit(object, 'OBJECT');
+      this.visit(object, TypeKind.object);
     }
   }
 
