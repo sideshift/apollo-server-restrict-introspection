@@ -1,6 +1,6 @@
 {
   "name": "apollo-server-restrict-introspection",
-  "version": "0.1.0",
+  "version": "0.2.0",
   "description": "Restrict types exposed by apollo-server's introspection/playground.",
   "main": "./dist/index.js",
   "types": "./dist/index.d.ts",
