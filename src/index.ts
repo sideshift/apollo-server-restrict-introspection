@@ -29,7 +29,7 @@ interface ObjectType {
 
 interface InputObjectType {
   kind: TypeKind.inputObject;
-  fields: Field[];
+  inputFields: Field[];
 }
 
 interface ScalarType {
@@ -100,8 +100,10 @@ export function withWhitelist(whitelist: Whitelist, response: unknown): Introspe
 
           let fields: Field[];
 
-          if (type.kind === TypeKind.object || type.kind === TypeKind.inputObject) {
+          if (type.kind === TypeKind.object) {
             fields = type.fields;
+          } else if (type.kind === TypeKind.inputObject) {
+            fields = type.inputFields;
           } else {
             throw new Error(`Unexpected kind ${type.kind}`);
           }
