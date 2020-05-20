@@ -2,17 +2,29 @@
 /* eslint-disable import/no-extraneous-dependencies */
 /* eslint-disable import/prefer-default-export */
 import { gql, ApolloServer } from 'apollo-server-express';
-import { createDirective } from '.';
+import { createDirective, directiveTypeDef } from '.';
 
 export function create() {
   const { whitelist, IntrospectionDirective } = createDirective();
 
   const typeDefs = gql`
-    directive @introspection(fields: Boolean) on OBJECT | FIELD_DEFINITION | INPUT_OBJECT | SCALAR
+    ${directiveTypeDef}
+
+    enum Size @introspection(fields: true) {
+      SMALL
+      MEDIUM
+      LARGE
+    }
+
+    enum Breed @introspection {
+      POODLE @introspection
+      BULLDOG @introspection
+    }
 
     type Dog @introspection(fields: true) {
       name: String!
       age: Int!
+      breed: Breed!
     }
 
     type Agent {
@@ -36,8 +48,9 @@ export function create() {
     {
       name: 'Fido',
       age: 10,
+      breed: 'POODLE',
     },
-    { name: 'Lassie', age: 8 },
+    { name: 'Lassie', age: 8, breed: 'BULLDOG' },
   ];
 
   const agents = [

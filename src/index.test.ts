@@ -6,7 +6,9 @@ describe('directive', () => {
 
     expect(whitelist).toEqual([
       'CacheControlScope',
-      { kind: 'OBJECT', name: 'Dog', fields: ['name', 'age'] },
+      { kind: 'ENUM', name: 'Size', fields: ['SMALL', 'MEDIUM', 'LARGE'] },
+      { kind: 'ENUM', name: 'Breed', fields: ['POODLE', 'BULLDOG'] },
+      { kind: 'OBJECT', name: 'Dog', fields: ['name', 'age', 'breed'] },
       { kind: 'OBJECT', name: 'Query', fields: ['dogs'] },
       { kind: 'OBJECT', name: 'Mutation', fields: ['bark'] },
     ]);

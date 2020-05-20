@@ -13,6 +13,7 @@ See src/demo.ts and src/index.test.ts
 ## Notes
 
 - You must use `app.use(bodyParser.json())` before the middleware
+- You must declare the directive's type, exported as the string `directiveTypeDef`
 - The middleware must run before apollo-server's middleware
 
 ## Author

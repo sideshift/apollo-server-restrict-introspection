@@ -7,12 +7,15 @@ import type {
   GraphQLObjectType,
   GraphQLInputObjectType,
   GraphQLScalarType,
+  GraphQLEnumType,
+  GraphQLEnumValue,
 } from 'graphql';
 import type { NextFunction, Request, Response } from 'express';
 import LRU from 'lru-cache';
 import { SchemaDirectiveVisitor } from 'apollo-server-express';
 
 enum TypeKind {
+  enum = 'ENUM',
   inputObject = 'INPUT_OBJECT',
   object = 'OBJECT',
   scalar = 'SCALAR'
@@ -37,7 +40,12 @@ interface ScalarType {
   fields: null;
 }
 
-type Type = { name: string; } & (ObjectType | InputObjectType | ScalarType);
+interface EnumType {
+  kind: TypeKind.enum;
+  fields: Field[];
+}
+
+type Type = { name: string; } & (ObjectType | InputObjectType | ScalarType | EnumType);
 
 /* eslint-disable no-underscore-dangle */
 interface IntrospectionResponse {
@@ -104,6 +112,8 @@ export function withWhitelist(whitelist: Whitelist, response: unknown): Introspe
             fields = type.fields;
           } else if (type.kind === TypeKind.inputObject) {
             fields = type.inputFields;
+          } else if (type.kind === TypeKind.enum) {
+            fields = type.fields;
           } else {
             throw new Error(`Unexpected kind ${type.kind}`);
           }
@@ -239,8 +249,37 @@ export function createDirective() {
     visitObject(object: GraphQLObjectType): GraphQLObjectType | void | null {
       this.visit(object, TypeKind.object);
     }
+
+    visitEnumValue(object: GraphQLEnumValue): GraphQLEnumValue | void | null {
+    }
+
+    visitEnum(object: GraphQLEnumType): GraphQLEnumType | void | null {
+      const values = object.getValues();
+      const allowAllFields = this.args.fields === true;
+
+      whitelist.push({
+        kind: TypeKind.enum,
+        name: object.name,
+
+        fields:
+          (values
+            .map((value) =>
+              allowAllFields ||
+              value.astNode?.directives?.some(
+                (directive) => directive.name.value === 'introspection'
+              )
+                ? value.name
+                : undefined
+            )
+            .filter(Boolean) as string[]) ?? [],
+      });
+        }
   }
 
   // eslint-disable-next-line @typescript-eslint/no-explicit-any
   return { whitelist, IntrospectionDirective: IntrospectionDirective as any };
 }
+
+export const directiveTypeDef = `directive @introspection(
+  fields: Boolean
+) on OBJECT | FIELD_DEFINITION | INPUT_OBJECT | SCALAR | ENUM | ENUM_VALUE`;
