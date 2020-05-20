@@ -42,7 +42,7 @@ interface ScalarType {
 
 interface EnumType {
   kind: TypeKind.enum;
-  fields: Field[];
+  enumValues: Field[];
 }
 
 type Type = { name: string; } & (ObjectType | InputObjectType | ScalarType | EnumType);
@@ -113,7 +113,7 @@ export function withWhitelist(whitelist: Whitelist, response: unknown): Introspe
           } else if (type.kind === TypeKind.inputObject) {
             fields = type.inputFields;
           } else if (type.kind === TypeKind.enum) {
-            fields = type.fields;
+            fields = type.enumValues;
           } else {
             throw new Error(`Unexpected kind ${type.kind}`);
           }
@@ -250,30 +250,28 @@ export function createDirective() {
       this.visit(object, TypeKind.object);
     }
 
-    visitEnumValue(object: GraphQLEnumValue): GraphQLEnumValue | void | null {
-    }
+    visitEnumValue(_object: GraphQLEnumValue): GraphQLEnumValue | void | null {}
 
     visitEnum(object: GraphQLEnumType): GraphQLEnumType | void | null {
       const values = object.getValues();
       const allowAllFields = this.args.fields === true;
 
+      const fields =
+        (values
+          .map(value =>
+            allowAllFields ||
+            value.astNode?.directives?.some(directive => directive.name.value === 'introspection')
+              ? value.name
+              : undefined
+          )
+          .filter(Boolean) as string[]) ?? [];
+
       whitelist.push({
         kind: TypeKind.enum,
         name: object.name,
-
-        fields:
-          (values
-            .map((value) =>
-              allowAllFields ||
-              value.astNode?.directives?.some(
-                (directive) => directive.name.value === 'introspection'
-              )
-                ? value.name
-                : undefined
-            )
-            .filter(Boolean) as string[]) ?? [],
+        fields,
       });
-        }
+    }
   }
 
   // eslint-disable-next-line @typescript-eslint/no-explicit-any
