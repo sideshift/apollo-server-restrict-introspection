@@ -18,7 +18,7 @@ enum TypeKind {
   enum = 'ENUM',
   inputObject = 'INPUT_OBJECT',
   object = 'OBJECT',
-  scalar = 'SCALAR'
+  scalar = 'SCALAR',
 }
 
 interface Field {
@@ -45,7 +45,7 @@ interface EnumType {
   enumValues: Field[];
 }
 
-type Type = { name: string; } & (ObjectType | InputObjectType | ScalarType | EnumType);
+type Type = { name: string } & (ObjectType | InputObjectType | ScalarType | EnumType);
 
 /* eslint-disable no-underscore-dangle */
 interface IntrospectionResponse {
@@ -57,7 +57,7 @@ interface IntrospectionResponse {
       mutationType?: {
         name: string;
       };
-      types: Type[]
+      types: Type[];
     };
   };
 }
@@ -125,7 +125,7 @@ export function withWhitelist(whitelist: Whitelist, response: unknown): Introspe
               fields: fields.filter((field) => allowedFields.includes(field.name)),
             },
           ];
-        }, [] as (typeof data)['__schema']['types']),
+        }, [] as typeof data['__schema']['types']),
       },
     },
   };
@@ -258,9 +258,9 @@ export function createDirective() {
 
       const fields =
         (values
-          .map(value =>
+          .map((value) =>
             allowAllFields ||
-            value.astNode?.directives?.some(directive => directive.name.value === 'introspection')
+            value.astNode?.directives?.some((directive) => directive.name.value === 'introspection')
               ? value.name
               : undefined
           )
