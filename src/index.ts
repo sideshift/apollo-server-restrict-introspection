@@ -188,13 +188,21 @@ export function middleware(whitelist: Whitelist) {
         return res;
       }
 
-      const body: IntrospectionResponse = JSON.parse(bodyRaw);
+      let result: IntrospectionResponse | { error: string };
 
-      validateWhitelist(whitelist, body);
+      try {
+        const body: IntrospectionResponse = JSON.parse(bodyRaw);
 
-      const result = withWhitelist(whitelist, body);
+        validateWhitelist(whitelist, body);
 
-      cache.set(hash, result);
+        result = withWhitelist(whitelist, body);
+
+        cache.set(hash, result);
+      } catch (error) {
+        console.error(`Failed to parse apollo whitelist response body:\n${error.stack}`);
+        result = { error: `Internal Server Error` };
+      }
+
       sent = true;
 
       send.call(this, result);
