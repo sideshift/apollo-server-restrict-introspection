@@ -13,12 +13,14 @@ import type {
 import type { NextFunction, Request, Response } from 'express';
 import LRU from 'lru-cache';
 import { SchemaDirectiveVisitor } from 'apollo-server-express';
+import {GraphQLUnionType} from 'graphql';
 
 enum TypeKind {
   enum = 'ENUM',
   inputObject = 'INPUT_OBJECT',
   object = 'OBJECT',
   scalar = 'SCALAR',
+  union = 'UNION',
 }
 
 interface Field {
@@ -45,7 +47,12 @@ interface EnumType {
   enumValues: Field[];
 }
 
-type Type = { name: string } & (ObjectType | InputObjectType | ScalarType | EnumType);
+interface UnionType {
+  kind: TypeKind.union;
+  possibleTypes: Field[];
+}
+
+type Type = { name: string } & (ObjectType | InputObjectType | ScalarType | EnumType | UnionType);
 
 /* eslint-disable no-underscore-dangle */
 interface IntrospectionResponse {
@@ -114,6 +121,8 @@ export function withWhitelist(whitelist: Whitelist, response: unknown): Introspe
             fields = type.inputFields;
           } else if (type.kind === TypeKind.enum) {
             fields = type.enumValues;
+          } else if (type.kind === TypeKind.union) {
+            fields = type.possibleTypes;
           } else {
             throw new Error(`Unexpected kind ${type.kind}`);
           }
@@ -280,6 +289,25 @@ export function createDirective() {
         fields,
       });
     }
+
+    visitUnion(union: GraphQLUnionType): GraphQLUnionType | void | null {
+      const types = union.getTypes();
+      const allowAllFields = this.args.fields === true;
+
+      const possibleTypes =
+        (types
+          .map(type => allowAllFields || type.astNode?.directives?.some(directive => directive.name.value === 'introspection')
+            ? type.name
+            : undefined
+          )
+        .filter(Boolean) as string[]) ?? [];
+
+      whitelist.push({
+        kind: TypeKind.union,
+        name: union.name,
+        fields: possibleTypes,
+      });
+    }
   }
 
   // eslint-disable-next-line @typescript-eslint/no-explicit-any
@@ -288,4 +316,4 @@ export function createDirective() {
 
 export const directiveTypeDef = `directive @introspection(
   fields: Boolean
-) on OBJECT | FIELD_DEFINITION | INPUT_OBJECT | SCALAR | ENUM | ENUM_VALUE`;
+) on OBJECT | FIELD_DEFINITION | INPUT_OBJECT | SCALAR | ENUM | ENUM_VALUE | UNION`;

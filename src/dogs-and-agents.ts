@@ -20,11 +20,29 @@ export function create() {
       POODLE @introspection
       BULLDOG @introspection
     }
+    
+    enum IssueType @introspection(fields: true) {
+        FLEAS
+        HEARTWORMS
+    }
+    
+    union Issue @introspection = Fleas | Heartworms
+    
+    type Fleas @introspection(fields: true) {
+        type: IssueType!
+        bathed: Boolean!
+    }
+    
+    type Heartworms @introspection {
+        type: IssueType! @introspection
+        surgeryRequired: Boolean!
+    }
 
     type Dog @introspection(fields: true) {
       name: String!
       age: Int!
       breed: Breed!
+      issues: [Issue!]!
     }
 
     type Agent {
@@ -92,6 +110,13 @@ export function create() {
         return 'Woof!';
       },
     },
+    Issue: {
+      __resolveType: (parent: { type: 'FLEAS' | 'HEARTWORMS' }) => {
+        if (parent.type === 'FLEAS') return 'Fleas';
+        if (parent.type === 'HEARTWORMS') return 'Heartworms';
+        throw new Error('Undefined Issue Type');
+      }
+    }
   };
 
   const apolloServer = new ApolloServer({

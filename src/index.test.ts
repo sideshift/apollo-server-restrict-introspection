@@ -8,7 +8,11 @@ describe('directive', () => {
       'CacheControlScope',
       { kind: 'ENUM', name: 'Size', fields: ['SMALL', 'MEDIUM', 'LARGE'] },
       { kind: 'ENUM', name: 'Breed', fields: ['POODLE', 'BULLDOG'] },
-      { kind: 'OBJECT', name: 'Dog', fields: ['name', 'age', 'breed'] },
+      { kind: 'ENUM', name: 'IssueType', fields: ['FLEAS', 'HEARTWORMS'] },
+      { kind: 'UNION', name: 'Issue', fields: ['Fleas', 'Heartworms'] },
+      { kind: 'OBJECT', name: 'Fleas', fields: ['type', 'bathed'] },
+      { kind: 'OBJECT', name: 'Heartworms', fields: ['type'] },
+      { kind: 'OBJECT', name: 'Dog', fields: ['name', 'age', 'breed', 'issues'] },
       { kind: 'OBJECT', name: 'Query', fields: ['dogs'] },
       { kind: 'OBJECT', name: 'Mutation', fields: ['bark'] },
     ]);
